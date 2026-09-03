@@ -223,7 +223,18 @@
               <p class="error" data-error-for="privacidad"></p>
             </div>
 
-            <button type="submit" class="btn btn--primary btn--block">Solicitar reunión</button>
+            <!-- Trampa antispam: invisible para personas, tentadora para bots -->
+            <div class="hp" aria-hidden="true">
+              <label for="sitio">No completes este campo</label>
+              <input type="text" id="sitio" name="sitio" tabindex="-1" autocomplete="off" />
+            </div>
+
+            <p class="form__alert" id="form-alerta" role="alert" hidden></p>
+
+            <button type="submit" class="btn btn--primary btn--block" id="btn-enviar">
+              <span class="btn__label">Solicitar reunión</span>
+              <span class="spinner" aria-hidden="true"></span>
+            </button>
             <p class="form__note">Al enviar no se genera ningún cobro ni contrato.</p>
           </form>
 

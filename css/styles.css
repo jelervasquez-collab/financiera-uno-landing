@@ -403,6 +403,44 @@ a { color: inherit; }
 .field.has-error select,
 .field.has-error textarea { border-color: #C0392B; }
 
+/* Aviso de error del formulario completo */
+.form__alert {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid #E6B7B0;
+  border-radius: var(--radius);
+  background: #FDF3F2;
+  font-size: 14px;
+  color: #97281B;
+}
+
+/* Trampa antispam: fuera de la vista, pero alcanzable por bots */
+.hp {
+  position: absolute;
+  width: 1px; height: 1px;
+  margin: -1px; padding: 0; border: 0;
+  overflow: hidden; clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Botón mientras se envía */
+.btn[disabled] {
+  cursor: progress;
+  opacity: .72;
+}
+.btn[disabled]:hover { transform: none; }
+
+.spinner { display: none; }
+.btn[aria-busy="true"] .spinner {
+  display: inline-block;
+  width: 15px; height: 15px;
+  border: 2px solid rgba(255, 255, 255, .4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
 .form__note {
   text-align: center;
   font-size: 13px;
@@ -468,4 +506,5 @@ a { color: inherit; }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   * { transition: none !important; }
+  .btn[aria-busy="true"] .spinner { animation: none; border-top-color: rgba(255, 255, 255, .4); }
 }

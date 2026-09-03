@@ -4,10 +4,30 @@
 (function () {
   "use strict";
 
+  /* =========================================================
+     CONFIGURACIÓN — lo único que hay que tocar para publicar
+     =========================================================
+     ENDPOINT: URL que recibe la solicitud por POST (JSON).
+
+     · Sin backend propio: creá un formulario en https://formspree.io
+       y pegá acá la URL que te dan (https://formspree.io/f/xxxxxxx).
+       Basin (https://usebasin.com) funciona igual.
+     · Con backend propio: tu endpoint debe aceptar JSON, responder 2xx
+       en caso de éxito y permitir CORS desde el dominio del sitio.
+
+     Si lo dejás vacío, el formulario queda en MODO DEMO: valida, imprime
+     los datos en la consola y muestra la confirmación, sin enviar nada.
+     Útil para probar la página abriendo index.html con doble clic.
+  ---------------------------------------------------------- */
+  var ENDPOINT = "";
+  var TIMEOUT_MS = 15000;
+
   var form     = document.getElementById("form-agendar");
   var exito    = document.getElementById("form-exito");
   var textoOk  = document.getElementById("success-text");
   var btnNueva = document.getElementById("btn-nueva");
+  var btnEnviar = document.getElementById("btn-enviar");
+  var alerta   = document.getElementById("form-alerta");
   var inputFecha = document.getElementById("fecha");
 
   /* Año dinámico en el pie de página */
@@ -70,8 +90,47 @@
   });
 
   /* ---------- Envío ---------- */
+  var enviando = false;
+
+  function mostrarAlerta(texto) {
+    if (!alerta) return;
+    alerta.textContent = texto || "";
+    alerta.hidden = !texto;
+  }
+
+  function bloquear(activo) {
+    enviando = activo;
+    if (!btnEnviar) return;
+    btnEnviar.disabled = activo;
+    btnEnviar.setAttribute("aria-busy", activo ? "true" : "false");
+    var label = btnEnviar.querySelector(".btn__label");
+    if (label) label.textContent = activo ? "Enviando…" : "Solicitar reunión";
+  }
+
+  /* fetch con límite de tiempo: si el servidor no responde, no dejamos
+     el botón bloqueado para siempre */
+  function enviar(datos) {
+    var control = new AbortController();
+    var reloj = setTimeout(function () { control.abort(); }, TIMEOUT_MS);
+
+    return fetch(ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Accept": "application/json" },
+      body: JSON.stringify(datos),
+      signal: control.signal
+    }).then(function (r) {
+      clearTimeout(reloj);
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r;
+    }, function (err) {
+      clearTimeout(reloj);
+      throw err;
+    });
+  }
+
   form.addEventListener("submit", function (e) {
     e.preventDefault();
+    if (enviando) return;
 
     var primerError = null;
 
@@ -82,28 +141,47 @@
     });
 
     if (primerError) {
+      mostrarAlerta("Revisá los campos marcados antes de enviar.");
       primerError.focus();
       return;
     }
 
+    mostrarAlerta("");
+
     var datos = Object.fromEntries(new FormData(form).entries());
 
-    /* -----------------------------------------------------------
-       AQUÍ SE CONECTA EL BACKEND.
-       Reemplazá este bloque por el envío real, por ejemplo:
+    /* Trampa antispam: si viene completa, la llenó un bot. Mostramos la
+       confirmación de siempre para no darle pistas y no enviamos nada. */
+    if ((datos.sitio || "").trim() !== "") {
+      mostrarExito(datos);
+      return;
+    }
+    delete datos.sitio;
 
-       fetch("https://api.financierauno.com/reuniones", {
-         method: "POST",
-         headers: { "Content-Type": "application/json" },
-         body: JSON.stringify(datos)
-       })
-         .then(function (r) { if (!r.ok) throw new Error("Error"); mostrarExito(datos); })
-         .catch(function () { alert("No pudimos enviar tu solicitud. Intentá de nuevo."); });
+    /* Modo demo: sin ENDPOINT configurado no hay a dónde enviar */
+    if (!ENDPOINT) {
+      console.log("Solicitud de reunión (modo demo, no se envió):", datos);
+      mostrarExito(datos);
+      return;
+    }
 
-       Por ahora solo se simula el envío.
-    ----------------------------------------------------------- */
-    console.log("Solicitud de reunión:", datos);
-    mostrarExito(datos);
+    bloquear(true);
+
+    enviar(datos)
+      .then(function () {
+        bloquear(false);
+        mostrarExito(datos);
+      })
+      .catch(function (err) {
+        bloquear(false);
+        console.error("Error al enviar la solicitud:", err);
+        mostrarAlerta(
+          err && err.name === "AbortError"
+            ? "El envío tardó demasiado. Revisá tu conexión e intentá de nuevo."
+            : "No pudimos enviar tu solicitud. Intentá de nuevo o escribinos a contacto@financierauno.com."
+        );
+        if (btnEnviar) btnEnviar.focus();
+      });
   });
 
   function mostrarExito(datos) {
@@ -136,6 +214,7 @@
         campo.closest(".field").classList.remove("has-error");
         campo.removeAttribute("aria-invalid");
       });
+      mostrarAlerta("");
       exito.hidden = true;
       form.hidden = false;
       document.getElementById("nombre").focus();
