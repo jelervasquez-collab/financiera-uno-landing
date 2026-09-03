@@ -56,6 +56,36 @@ fetch("https://api.financierauno.com/reuniones", {
 Alternativas sin backend propio: Formspree, Basin, Google Forms o embeber Calendly
 directamente en la sección `#agendar`.
 
+## Despliegue en Vercel
+
+El sitio es estático: **no requiere build ni comando de instalación**. `vercel.json` ya define
+URLs limpias, dos cabeceras de seguridad y caché para `css/` y `js/`.
+
+### 1. Crear el repositorio en GitHub
+
+En https://github.com/new, creá un repo **vacío** (sin README, sin .gitignore, sin licencia),
+por ejemplo `financiera-uno-landing`.
+
+### 2. Subir el código
+
+```bash
+git remote add origin https://github.com/TU-USUARIO/financiera-uno-landing.git
+```
+
+```bash
+git push -u origin main
+```
+
+### 3. Importar en Vercel
+
+1. Entrá a https://vercel.com/new
+2. Conectá tu cuenta de GitHub y elegí el repositorio
+3. En **Framework Preset** seleccioná `Other`
+4. Dejá vacíos *Build Command* y *Install Command*; *Output Directory* queda en la raíz
+5. **Deploy**
+
+A partir de ahí, cada `git push` a `main` genera un despliegue nuevo automáticamente.
+
 ## Detalles incluidos
 
 - Validación en el cliente con mensajes en español y foco en el primer campo con error.
